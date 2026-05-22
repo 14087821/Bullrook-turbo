@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BULLROOK.COM | Minería & Fuerza</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@cosmjs/stargate@0.32.3/build/index.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary: #ff9900;
+            --primary-dark: #e68a00;
+            --bg: #0a0a0a;
+            --bg-secondary: #151515;
+            --text: #e0e0e0;
+            --text-secondary: #aaa;
+            --border: #444;
+            --success: #4caf50;
+            --error: #f44336;
+            --warning: #ff9800;
+        }
+
+        body.light-mode {
+            --bg: #f5f5f5;
+            --bg-secondary: #ffffff;
+            --text: #222;
+            --text-secondary: #666;
+            --border: #ddd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: clamp(15px, 5vw, 30px);
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+            border-bottom: 3px solid var(--primary);
+            padding: clamp(30px, 8vw, 60px) clamp(15px, 5vw, 30px);
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        body.light-mode header {
+            background: linear-gradient(135deg, #fff 0%, #f9f9f9 100%);
+        }
+
+        header h1 {
+            font-size: clamp(2em, 6vw, 3.5em);
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(255, 153, 0, 0.6);
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: clamp(0.9em, 2vw, 1.2em);
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+        }
+
+        .header-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: var(--primary);
+            color: #000;
+            font-weight: bold;
+            padding: clamp(10px, 2vw, 14px) clamp(20px, 3vw, 35px);
+            border: none;
+            border-radius: 50px;
+            font-size: clamp(0.9em, 2vw, 1.1em);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .cta-button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 153, 0, 0.3);
+        }
+
+        .cta-button:active {
+            transform: translateY(0);
+        }
+
+        .cta-button.secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .cta-button.secondary:hover {
+            background: rgba(255, 153, 0, 0.1);
+        }
+
+        #themeToggle {
+            background: rgba(255, 153, 0, 0.2);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+
+        #themeToggle:hover {
+            background: rgba(255, 153, 0, 0.3);
+        }
+
+        .wallet-status {
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            word-break: break-all;
+            transition: all 0.3s;
+        }
+
+        #walletStatus {
+            background: rgba(68, 68, 68, 0.5);
+            color: var(--text-secondary);
+        }
+
+        #walletStatus.success {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success);
+        }
+
+        #walletStatus.error {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--error);
+        }
+
+        /* ===== DASHBOARD STATS ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(150px, 25vw, 250px), 1fr));
+            gap: clamp(12px, 3vw, 20px);
+            margin: clamp(20px, 5vw, 40px) 0;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: clamp(15px, 3vw, 25px);
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(255, 153, 0, 0.2);
+        }
+
+        .stat-card h3 {
+            font-size: clamp(0.8em, 1.5vw, 0.95em);
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            font-size: clamp(1.4em, 4vw, 2em);
+            color: var(--primary);
+            font-weight: bold;
+            word-break: break-word;
+        }
+
+        /* ===== SECCIONES ===== */
+        .section {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: clamp(20px, 5vw, 30px);
+            margin: clamp(20px, 5vw, 30px) 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: clamp(1.3em, 3vw, 1.8em);
+        }
+
+        .status {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin: 12px 0;
+            word-break: break-word;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success);
+            border-left: 3px solid var(--success);
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--error);
+            border-left: 3px solid var(--error);
+        }
+
+        .status.warning {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--warning);
+            border-left: 3px solid var(--warning);
+        }
+
+        .status.info {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196f3;
+            border-left: 3px solid #2196f3;
+        }
+
+        /* ===== FORMULARIOS ===== */
+        .form-group {
+            margin: 15px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        input, select {
+            width: 100%;
+            background: rgba(100, 100, 100, 0.2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: clamp(10px, 2vw, 12px);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        body.light-mode input,
+        body.light-mode select {
+            background: #f0f0f0;
+            border-color: #ddd;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 153, 0, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(150px, 25vw, 200px), 1fr));
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        /* ===== GRÁFICAS ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(clamp(250px, 45vw, 500px), 1fr));
+            gap: clamp(15px, 3vw, 25px);
+            margin: 20px 0;
+        }
+
+        .chart-container {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: clamp(15px, 3vw, 20px);
+            min-height: 300px;
+            position: relative;
+        }
+
+        .chart-container h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: clamp(1em, 2vw, 1.2em);
+        }
+
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .header-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .cta-button {
+                width: 100%;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            input, select {
+                width: 100%;
+            }
+        }
+
+        /* ===== LOADING ANIMATION ===== */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 153, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ===== UTILITY ===== */
+        .note {
+            font-size: clamp(0.8em, 1.5vw, 0.9em);
+            color: var(--text-secondary);
+            margin: 15px 0;
+            padding: 10px;
+            border-left: 3px solid var(--text-secondary);
+            padding-left: 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <h1>🐂 BULLROOK.COM</h1>
+        <p>MINERÍA FUERTE COMO UN TORO • CLÁSICO COMO EL ROOK</p>
+        
+        <div class="header-controls">
+            <button id="connectWalletBtn" class="cta-button">🚀 CONECTAR CARTERA</button>
+            <button id="themeToggle" class="cta-button secondary">🌙 Modo Oscuro</button>
+        </div>
+        
+        <div id="walletStatus" class="wallet-status">
+            Estado: Desconectado
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- STATS DASHBOARD -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>💎 Balance DYDX</h3>
+                <div class="value" id="dydxBalance">0.0000</div>
+            </div>
+            <div class="stat-card">
+                <h3>💵 Balance USDC</h3>
+                <div class="value" id="usdcBalance">0.00</div>
+            </div>
+            <div class="stat-card">
+                <h3>🔒 Delegado</h3>
+                <div class="value" id="delegatedDisplay">0.0000</div>
+            </div>
+            <div class="stat-card">
+                <h3>🎁 Recompensas</h3>
+                <div class="value" id="rewardsDisplay">0.000000</div>
+            </div>
+        </div>
+
+        <!-- GRÁFICAS -->
+        <div class="charts-grid" id="chartsSection" style="display: none;">
+            <div class="chart-container">
+                <h3>📈 Evolución de Balance</h3>
+                <canvas id="balanceChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>🏆 Recompensas Diarias</h3>
+                <canvas id="rewardsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- STAKING SECTION -->
+        <section class="section">
+            <h2>🔒 MINERÍA Y STAKING (REAL)</h2>
+            <p class="note">💡 Delega tus fondos DYDX a validadores de la red para ganar recompensas automáticas.</p>
+            
+            <div class="form-group">
+                <label for="validatorList">Selecciona Validador:</label>
+                <select id="validatorList">
+                    <option value="dydxvaloper1v90msf4z6v4egf79f2w0un3un8z99f98f2m9pc">Cosmostation (Validador Principal)</option>
+                    <option value="dydxvaloper1g7m7n8eg8vjq7vsq4g6vqy7u4vn8f9m8h3t2v9">Keplr Validator (Alternativo)</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <input type="number" id="stakeAmount" placeholder="Cantidad de DYDX" step="any" min="0" max="1000000000">
+                <button id="stakeBtn" class="cta-button">✅ DELEGAR Y GANAR</button>
+            </div>
+
+            <div id="stakeError" class="status error"></div>
+            <div id="stakeStatus" class="status"></div>
+        </section>
+
+        <!-- REWARDS SECTION -->
+        <section class="section">
+            <h2>💰 TUS GANANCIAS</h2>
+            <p class="note">📊 Retira todas tus recompensas acumuladas de forma segura en la blockchain.</p>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="font-size: clamp(1.5em, 5vw, 2.5em); color: var(--primary); font-weight: bold;">
+                    <span id="rewards">0.000000</span> DYDX
+                </div>
+            </div>
+
+            <button id="claimBtn" class="cta-button" style="width: 100%; margin-top: 15px;">💎 COBRAR TODO</button>
+            <div id="claimStatus" class="status"></div>
+        </section>
+
+        <!-- TRADING SECTION (INFO) -->
+        <section class="section">
+            <h2>📊 INFORMACIÓN DE TRADING</h2>
+            <p class="note">⚠️ El trading en dYdX v4 requiere integración avanzada con su API CLOB. Esta funcionalidad estará disponible próximamente.</p>
+            <div class="status warning" style="display: block;">
+                El módulo de trading descentralizado está optimizándose para máxima seguridad y rendimiento.
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
